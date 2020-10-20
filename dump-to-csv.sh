@@ -15,6 +15,11 @@ indent() { sed -u 's/^/    /' "$@"; }
 
 start=$SECONDS
 
+elapsed() {
+    echo "Total seconds elapsed: $(($SECONDS - $start))"
+    echo
+}
+
 dump-table() {
     keyspace=$1
     table=$2
@@ -25,10 +30,7 @@ dump-table() {
     cmd=$(echo "copy %table% to '%table%.csv'" | sed s/%table%/$table/g)
 
     cqlsh -k $keyspace -e "$cmd" | indent
-    echo
-
-    echo "Total seconds elapsed: $(($SECONDS - $start))"
-    echo
+    elapsed
 }
 
 dump-all() {
@@ -50,6 +52,21 @@ dump-all() {
 log="output.log"
 
 dump-all 2>&1 | tee $log
+
+if [[ "$*" == *"--ordered"* ]]
+then
+    echo "Sorting all exported files"
+    results=$(find -iname '*.csv')
+    for result in $results
+    do
+        buffer=$(mktemp)
+        sort $result > $buffer
+        mv $buffer $result
+    done
+
+    elapsed
+fi
+
 popd
 
 echo "Log with all errors:"

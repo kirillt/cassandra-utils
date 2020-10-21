@@ -6,12 +6,30 @@ dir=`date +%s`
 pushd() { command pushd "$@" > /dev/null; }
 popd() { command popd "$@" > /dev/null; }
 
+indent() { sed -u 's/^/    /' "$@"; }
+
+echo "If you want to ignore certain keyspaces, provide path to a file:"
+echo "* with strictly 1 keyspace per line"
+echo "* the path must be 1st argument"
+echo
+
+echo "If you want to produce ordered CSV files, append --ordered option:"
+echo "* strictly in the end of command"
+echo
+
+if [[ ! -z $1 && ! $1 == '--'* ]]
+then
+    ignored=$(echo "$(pwd)/$1")
+    [ ! -f $ignored ] && echo "File $1 can't be found" && exit 1
+fi
+
+[ ! -z $ignored ] && echo "List of ignored keyspaces:" && cat $ignored
+echo
+
 echo "Creating snapshot folder $dir"
 mkdir $dir
 pushd $_
 echo
-
-indent() { sed -u 's/^/    /' "$@"; }
 
 start=$SECONDS
 
@@ -37,15 +55,20 @@ dump-all() {
     keyspaces=$(cqlsh -e 'describe keyspaces;')
     for keyspace in $keyspaces
     do
-        echo "Dumping keyspace ''$keyspace''"
-        mkdir $keyspace
-        pushd $_
-        tables=$(cqlsh -k $keyspace -e 'describe tables;')
-        for table in $tables
-        do
-            dump-table $keyspace $table | indent
-        done
-        popd
+        if [ -z $(grep $keyspace $ignored) ]
+        then
+            echo "Dumping keyspace ''$keyspace''"
+            mkdir $keyspace
+            pushd $_
+            tables=$(cqlsh -k $keyspace -e 'describe tables;')
+            for table in $tables
+            do
+                dump-table $keyspace $table | indent
+            done
+            popd
+        else
+            echo "Ignoring keyspace ''$keyspace''"
+        fi
     done
 }
 

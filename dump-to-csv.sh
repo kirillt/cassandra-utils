@@ -55,8 +55,10 @@ dump-all() {
     keyspaces=$(cqlsh -e 'describe keyspaces;')
     for keyspace in $keyspaces
     do
-        if [ -z $(grep $keyspace $ignored) ]
+        if grep -q $keyspace $ignored
         then
+            echo "Ignoring keyspace ''$keyspace''"
+        else
             echo "Dumping keyspace ''$keyspace''"
             mkdir $keyspace
             pushd $_
@@ -66,8 +68,6 @@ dump-all() {
                 dump-table $keyspace $table | indent
             done
             popd
-        else
-            echo "Ignoring keyspace ''$keyspace''"
         fi
     done
 }

@@ -42,10 +42,10 @@ dump-table() {
     keyspace=$1
     table=$2
 
-    echo "Dumping table ''$keyspace.$table''"
+    echo "Dumping table <<$keyspace.$table>>"
 
     # sed is necesary here, because variables inside of '' are not expanded
-    cmd=$(echo "copy %table% to '%table%.csv'" | sed s/%table%/$table/g)
+    cmd=$(echo "copy %table% to '%table%.csv' with header = true" | sed s/%table%/$table/g)
 
     cqlsh -k $keyspace -e "$cmd" | indent
     elapsed
@@ -57,9 +57,9 @@ dump-all() {
     do
         if grep -q $keyspace $ignored
         then
-            echo "Ignoring keyspace ''$keyspace''"
+            echo "Ignoring keyspace <<$keyspace>>"
         else
-            echo "Dumping keyspace ''$keyspace''"
+            echo "Dumping keyspace <<$keyspace>>"
             mkdir $keyspace
             pushd $_
             tables=$(cqlsh -k $keyspace -e 'describe tables;')
@@ -83,7 +83,7 @@ then
     for result in $results
     do
         buffer=$(mktemp)
-        sort $result > $buffer
+        (head -n 1 $result && tail -n +2 $result | sort) > $buffer
         mv $buffer $result
     done
 

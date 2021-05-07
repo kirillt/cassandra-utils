@@ -20,10 +20,10 @@ echo
 if [[ ! -z $1 && ! $1 == '--'* ]]
 then
     ignored=$(echo "$(pwd)/$1")
-    [ ! -f $ignored ] && echo "File $1 can't be found" && exit 1
+    [ ! -f "$ignored" ] && echo "File $1 can't be found" && exit 1
 fi
 
-[ ! -z $ignored ] && echo "List of ignored keyspaces:" && cat $ignored
+[ ! -z "$ignored" ] && echo "List of ignored keyspaces:" && cat "$ignored"
 echo
 
 echo "Creating snapshot folder $dir"
@@ -55,7 +55,7 @@ dump-all() {
     keyspaces=$(cqlsh -e 'describe keyspaces;')
     for keyspace in $keyspaces
     do
-        if grep -q $keyspace $ignored
+        if [ ! -z "$ignored" ] && grep -q $keyspace "$ignored"
         then
             echo "Ignoring keyspace <<$keyspace>>"
         else
